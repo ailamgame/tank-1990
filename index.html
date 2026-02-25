@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Battle City RPG - Mod Menu Added</title>
+    <style>
+        body {
+            background-color: #202020;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+        canvas {
+            background-color: #000;
+            border: 4px solid #555;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            image-rendering: pixelated;
+        }
+        #ui {
+            margin-top: 10px;
+            text-align: center;
+            width: 520px;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            align-items: center;
+            background: #333;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #555;
+        }
+        .gold-display { color: #ffd700; text-shadow: 0 0 5px #ffaa00; }
+        
+        .enemy-counter-bar {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            background: #2a2a2a;
+            padding: 5px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .enemy-counter-item { display: flex; align-items: center; }
+        .enemy-icon {
+            display: inline-block; width: 12px; height: 12px;
+            margin-right: 6px; border: 1px solid #fff;
+        }
+
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            text-align: left;
+        }
+        .info-col { width: 48%; }
+        .info-col h3 { 
+            color: #00ffff; margin: 0 0 5px 0; border-bottom: 1px solid #555; font-size: 1.1em;
+        }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+        .stat-value { color: #ffff00; font-weight: bold; }
+        .enemy-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+        
+        .controls-info {
+            font-size: 0.75em; color: #aaa; margin-top: 5px; text-align: center;
+        }
+        .god-mode-active {
+            color: #00ffff; animation: blink 0.5s infinite; text-shadow: 0 0 10px #00ffff;
+        }
+        .immortal-mode-active {
+            color: #ffffff; animation: blink 0.5s infinite; text-shadow: 0 0 10px #ffffff;
+        }
+        .mod-active {
+            color: #ff00ff; text-shadow: 0 0 5px #ff00ff;
+        }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas" width="520" height="520"></canvas>
+
+    <div id="ui">
+        <div class="status-bar">
+            <span class="gold-display">VÀNG: <span id="gold-count">0</span> $</span>
+            <span style="color: #ffff00">CẤP ĐỘ <span id="level-display">1</span></span>
+        </div>
+
+        <div class="enemy-counter-bar">
+            <div class="enemy-counter-item"><div class="enemy-icon" style="background: #cccccc"></div><span id="count-basic">0</span></div>
+            <div class="enemy-counter-item"><div class="enemy-icon" style="background: #ff5555"></div><span id="count-fast">0</span></div>
+            <div class="enemy-counter-item"><div class="enemy-icon" style="background: #00aa00"></div><span id="count-armored">0</span></div>
+        </div>
+        
+        <div id="god-mode-status" style="height: 20px; font-weight: bold;"></div>
+
+        <div class="info-panel">
+            <div class="info-col">
+                <h3>CHỈ SỐ CỦA BẠN</h3>
+                <div class="stat-row"><span>Tốc độ di chuyển:</span> <span id="stat-speed" class="stat-value">2.0</span></div>
+                <div class="stat-row"><span>Tốc độ đạn:</span> <span id="stat-bullet" class="stat-value">6.0</span></div>
+                <div class="stat-row"><span>Tốc độ nạp đạn:</span> <span id="stat-fire" class="stat-value">25</span></div>
+                <div style="color: #aaa; font-size: 0.9em; margin-top: 5px;">(Giá tăng theo cấp nâng cấp)</div>
+            </div>
+            <div class="info-col">
+                <h3>HỒ SƠ KẺ ĐỊCH</h3>
+                <div class="enemy-row">
+                    <span><div class="enemy-icon" style="background: #cccccc"></div> Thường</span>
+                    <span>HP:1 | $50</span>
+                </div>
+                <div class="enemy-row">
+                    <span><div class="enemy-icon" style="background: #ff5555"></div> Nhanh</span>
+                    <span>HP:1 | $100</span>
+                </div>
+                <div class="enemy-row">
+                    <span><div class="enemy-icon" style="background: #00aa00"></div> Thiết Giáp</span>
+                    <span>HP:3 | $200</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls-info">
+            <div><span style="color:#ffaa00">P1 (Trái):</span> WASD + Space | <span style="color:#00ff00">P2 (Phải):</span> Mũi tên + Enter</div>
+            <div><span style="color: #00ffff">P: Siêu Cấp</span> | <span style="color: #ffffff">O: Bất Tử</span> | <span style="color: #ff00ff">M: MENU MOD</span></div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * BATTLE CITY RPG - MOD MENU INTEGRATED
+         */
+
+        const TILE_SIZE = 40; 
+        const ROWS = 13;
+        const COLS = 13;
+        const SCREEN_WIDTH = TILE_SIZE * COLS;
+        const SCREEN_HEIGHT = TILE_SIZE * ROWS;
+        
+        const DIR = { UP: 0, RIGHT: 1, DOWN: 2, LEFT: 3 };
+        const TILE = { EMPTY: 0, BRICK: 1, STEEL: 2, BASE: 3, GRASS: 4 };
+        const STATE = { PLAYING: 0, SHOP: 1, GAMEOVER: 2, MOD_MENU: 3 }; // Thêm state MOD
+
+        const ENEMY_TYPE = { BASIC: 'basic', FAST: 'fast', ARMORED: 'armored' };
+        const ITEM_TYPE = { SHIELD: 0, STAR: 1, BOOTS: 2, SHOVEL: 3, COIN: 4 };
+
+        // --- INPUT HANDLING ---
+        class InputHandler {
+            constructor() {
+                this.keys = {};
+                this.pressed = {}; 
+                window.addEventListener('keydown', (e) => {
+                    if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 
+                        'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyP', 'KeyO', 'KeyM', 'KeyR'].includes(e.code)) {
+                        if(e.code !== 'KeyP' && e.code !== 'KeyO' && e.code !== 'KeyM' && e.code !== 'KeyR') e.preventDefault();
+                    }
+                    this.keys[e.code] = true;
+                    this.pressed[e.code] = true;
+                });
+                window.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                    this.pressed[e.code] = false;
+                });
+            }
+            isDown(code) { return this.keys[code] === true; }
+            isPressed(code) {
+                if (this.pressed[code]) {
+                    this.pressed[code] = false; 
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        function rectIntersect(r1, r2) {
+            return !(r2.x >= r1.x + r1.w || r2.x + r2.w <= r1.x || r2.y >= r1.y + r1.h || r2.y + r2.h <= r1.y);
+        }
+
+        // --- CLASSES ---
+        class Item {
+            constructor(x, y, type) {
+                this.x = x; this.y = y;
+                this.w = TILE_SIZE - 4; this.h = TILE_SIZE - 4;
+                this.type = type;
+                this.active = true;
+                this.blinkTimer = 0;
+            }
+            draw(ctx) {
+                if (!this.active) return;
+                this.blinkTimer++;
+                if (Math.floor(this.blinkTimer / 10) % 2 === 0) {
+                    let color = '#fff'; let text = '?';
+                    switch(this.type) {
+                        case ITEM_TYPE.SHIELD: color = '#5555ff'; text = 'S'; break;
+                        case ITEM_TYPE.STAR:   color = '#ffff00'; text = 'F'; break;
+                        case ITEM_TYPE.BOOTS:  color = '#00ff00'; text = 'M'; break;
+                        case ITEM_TYPE.SHOVEL: color = '#aaaaaa'; text = 'B'; break;
+                        case ITEM_TYPE.COIN:   color = '#ffd700'; text = '$'; break; 
+                    }
+                    ctx.fillStyle = color;
+                    ctx.fillRect(this.x + 2, this.y + 2, this.w, this.h);
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                    ctx.strokeRect(this.x + 2, this.y + 2, this.w, this.h);
+                    ctx.fillStyle = '#000'; ctx.font = 'bold 24px Courier New';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(text, this.x + TILE_SIZE/2, this.y + TILE_SIZE/2);
+                }
+            }
+            getRect() { return {x: this.x, y: this.y, w: this.w, h: this.h}; }
+        }
+
+        class Bullet {
+            constructor(x, y, dir, ownerType, customSpeed = 6) {
+                this.x = x; this.y = y; this.dir = dir;
+                this.ownerType = ownerType; 
+                this.speed = customSpeed;
+                this.size = 6; this.active = true;
+                this.w = this.size; this.h = this.size;
+            }
+            // Thêm mods vào tham số để check bất tử base từ menu hack
+            update(map, godMode, immortalMode, game) {
+                if (!this.active) return;
+                switch(this.dir) {
+                    case DIR.UP:    this.y -= this.speed; break;
+                    case DIR.DOWN:  this.y += this.speed; break;
+                    case DIR.LEFT:  this.x -= this.speed; break;
+                    case DIR.RIGHT: this.x += this.speed; break;
+                }
+                const rect = {x: this.x, y: this.y, w: this.w, h: this.h};
+                if (this.x < 0 || this.x > SCREEN_WIDTH || this.y < 0 || this.y > SCREEN_HEIGHT) {
+                    this.active = false; return;
+                }
+                let c1 = Math.floor(rect.x / TILE_SIZE); let c2 = Math.floor((rect.x + rect.w) / TILE_SIZE);
+                let r1 = Math.floor(rect.y / TILE_SIZE); let r2 = Math.floor((rect.y + rect.h) / TILE_SIZE);
+                c1 = Math.max(0, c1); c2 = Math.min(COLS-1, c2); r1 = Math.max(0, r1); r2 = Math.min(ROWS-1, r2);
+                for (let r = r1; r <= r2; r++) {
+                    for (let c = c1; c <= c2; c++) {
+                        const tile = map.grid[r][c];
+                        if (tile !== TILE.EMPTY && tile !== TILE.GRASS) {
+                            const tileRect = {x: c*TILE_SIZE, y: r*TILE_SIZE, w: TILE_SIZE, h: TILE_SIZE};
+                            if (rectIntersect(rect, tileRect)) {
+                                if (tile === TILE.BRICK) {
+                                    map.grid[r][c] = TILE.EMPTY;
+                                    this.active = false;
+                                    if (this.ownerType === 'player') {
+                                        const rand = Math.random();
+                                        if (rand < 0.05) game.spawnItem(c * TILE_SIZE, r * TILE_SIZE, ITEM_TYPE.COIN);
+                                        else if (rand < 0.25) game.spawnItem(c * TILE_SIZE, r * TILE_SIZE, null);
+                                    }
+                                } else if (tile === TILE.STEEL) {
+                                    this.active = false;
+                                } else if (tile === TILE.BASE) {
+                                    this.active = false;
+                                    // Check thêm mod "Căn cứ bất tử"
+                                    if (!godMode && !immortalMode && !game.mods.baseInvincible) map.destroyBase();
+                                }
+                                return; 
+                            }
+                        }
+                    }
+                }
+            }
+            draw(ctx) {
+                if (!this.active) return;
+                ctx.fillStyle = '#fff'; ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+            getRect() { return {x: this.x, y: this.y, w: this.w, h: this.h}; }
+        }
+
+        class Tank {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.w = 34; this.h = 34;
+                this.color = color; this.dir = DIR.UP;
+                this.speed = 2; this.cooldown = 0;
+                this.active = true; this.hp = 1; 
+            }
+            move(newDir, map, otherTanks, speedMultiplier = 1) {
+                this.dir = newDir;
+                let currentSpeed = this.speed * speedMultiplier; 
+                let nextX = this.x; let nextY = this.y;
+                if (this.dir === DIR.UP) nextY -= currentSpeed;
+                else if (this.dir === DIR.DOWN) nextY += currentSpeed;
+                else if (this.dir === DIR.LEFT) nextX -= currentSpeed;
+                else if (this.dir === DIR.RIGHT) nextX += currentSpeed;
+                const nextRect = {x: nextX, y: nextY, w: this.w, h: this.h};
+                if (nextX < 0 || nextX + this.w > SCREEN_WIDTH || nextY < 0 || nextY + this.h > SCREEN_HEIGHT) return;
+                
+                let collision = false;
+                const c1 = Math.floor(nextRect.x / TILE_SIZE); const c2 = Math.floor((nextRect.x + nextRect.w - 0.1) / TILE_SIZE);
+                const r1 = Math.floor(nextRect.y / TILE_SIZE); const r2 = Math.floor((nextRect.y + nextRect.h - 0.1) / TILE_SIZE);
+                for (let r = r1; r <= r2; r++) {
+                    for (let c = c1; c <= c2; c++) {
+                        if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                            const tile = map.grid[r][c];
+                            if (tile === TILE.BRICK || tile === TILE.STEEL || tile === TILE.BASE) {
+                                collision = true;
+                                const tileX = c * TILE_SIZE; const tileY = r * TILE_SIZE;
+                                const slideSpeed = 1.5 * speedMultiplier; 
+                                if (this.dir === DIR.UP || this.dir === DIR.DOWN) {
+                                    if ((nextRect.x + nextRect.w) - tileX < 12 && map.isWalkable(r, c-1)) { this.x -= slideSpeed; return; }
+                                    if ((tileX + TILE_SIZE) - nextRect.x < 12 && map.isWalkable(r, c+1)) { this.x += slideSpeed; return; }
+                                }
+                                if (this.dir === DIR.LEFT || this.dir === DIR.RIGHT) {
+                                    if ((nextRect.y + nextRect.h) - tileY < 12 && map.isWalkable(r-1, c)) { this.y -= slideSpeed; return; }
+                                    if ((tileY + TILE_SIZE) - nextRect.y < 12 && map.isWalkable(r+1, c)) { this.y += slideSpeed; return; }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!collision && otherTanks) {
+                    for (let other of otherTanks) {
+                        if (other !== this && other.active && rectIntersect(nextRect, other.getRect())) { collision = true; break; }
+                    }
+                }
+                if (!collision) { this.x = nextX; this.y = nextY; }
+            }
+            shoot(ownerType, cooldownTime = 30, bulletSpeed = 6) {
+                if (this.cooldown > 0) return null;
+                let bx = this.x + this.w / 2 - 3; let by = this.y + this.h / 2 - 3;
+                if (this.dir === DIR.UP) by = this.y - 6;
+                else if (this.dir === DIR.DOWN) by = this.y + this.h;
+                else if (this.dir === DIR.LEFT) bx = this.x - 6;
+                else if (this.dir === DIR.RIGHT) bx = this.x + this.w;
+                this.cooldown = cooldownTime; 
+                return new Bullet(bx, by, this.dir, ownerType, bulletSpeed);
+            }
+            update() { if (this.cooldown > 0) this.cooldown--; }
+            draw(ctx) {
+                if (!this.active) return;
+                ctx.save(); ctx.translate(this.x + this.w/2, this.y + this.h/2);
+                const rotation = [0, Math.PI/2, Math.PI, -Math.PI/2];
+                ctx.rotate(rotation[this.dir]);
+                ctx.fillStyle = this.color; ctx.fillRect(-this.w/2, -this.h/2, this.w, this.h); 
+                ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(-this.w/2 + 4, -this.h/2 + 6, this.w - 8, this.h - 12); 
+                ctx.fillStyle = '#888'; ctx.fillRect(-3, -this.h/2 - 6, 6, 12); 
+                ctx.fillStyle = '#000';
+                for(let i=0; i<3; i++) {
+                    ctx.fillRect(-this.w/2, -this.h/2 + i*10, 6, 8);
+                    ctx.fillRect(this.w/2 - 6, -this.h/2 + i*10, 6, 8);
+                }
+                if (this.hp > 1) { ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.fillText(this.hp, -3, 3); }
+                ctx.restore();
+            }
+            getRect() { return {x: this.x, y: this.y, w: this.w, h: this.h}; }
+        }
+
+        class Player extends Tank {
+            constructor(x, y, color, controls, upgrades) {
+                super(x, y, color);
+                this.controls = controls; 
+                this.baseSpeed = 2.0; 
+                this.upgrades = upgrades; 
+                this.respawnPoint = {x: x, y: y};
+                this.shieldTimer = 0; 
+                this.respawnTimer = 0;
+                this.hasRapidFire = false;
+                this.hasSpeedUp = false;
+            }
+            respawn() {
+                this.x = this.respawnPoint.x; this.y = this.respawnPoint.y;
+                this.dir = DIR.UP;
+                this.active = true;
+                this.shieldTimer = 180; 
+                this.respawnTimer = 0;
+                this.hasRapidFire = false;
+                this.hasSpeedUp = false;
+            }
+            die() { this.active = false; this.respawnTimer = 180; }
+            update() {
+                if (!this.active) {
+                    if (this.respawnTimer > 0) this.respawnTimer--;
+                    if (this.respawnTimer <= 0) this.respawn();
+                    return;
+                }
+                super.update();
+                if (this.shieldTimer > 0) this.shieldTimer--;
+            }
+            handleInput(input, map, enemies, otherPlayer, godMode) {
+                if (!this.active) return null;
+                const others = [...enemies];
+                if (otherPlayer && otherPlayer.active) others.push(otherPlayer);
+
+                let finalSpeed = this.baseSpeed + (this.upgrades.speed * 0.2);
+                let speedMult = 1.0;
+                
+                if (godMode) speedMult = 2.0;
+                else if (this.hasSpeedUp) speedMult = 1.5;
+                
+                this.speed = finalSpeed; 
+                
+                if (input.isDown(this.controls.up)) this.move(DIR.UP, map, others, speedMult);
+                else if (input.isDown(this.controls.down)) this.move(DIR.DOWN, map, others, speedMult);
+                else if (input.isDown(this.controls.left)) this.move(DIR.LEFT, map, others, speedMult);
+                else if (input.isDown(this.controls.right)) this.move(DIR.RIGHT, map, others, speedMult);
+
+                if (input.isDown(this.controls.fire)) {
+                    let cd = Math.max(5, 25 - (this.upgrades.fireRate * 2));
+                    let bSpeed = 6 + (this.upgrades.bulletSpeed * 1);
+                    if (godMode) { cd = 5; bSpeed = 12; }
+                    else if (this.hasRapidFire) { cd = Math.max(5, cd - 10); bSpeed += 3; }
+                    return this.shoot('player', cd, bSpeed);
+                }
+                return null;
+            }
+            applyItem(type) {
+                if (type === ITEM_TYPE.SHIELD) this.shieldTimer = 30 * 60;
+                else if (type === ITEM_TYPE.STAR) this.hasRapidFire = true;
+                else if (type === ITEM_TYPE.BOOTS) this.hasSpeedUp = true;
+            }
+            draw(ctx, godMode, immortalMode) {
+                if (!this.active) {
+                    ctx.fillStyle = '#fff'; ctx.font = '12px Courier'; ctx.textAlign = 'center';
+                    ctx.fillText("HỒI SINH: " + Math.ceil(this.respawnTimer/60), this.respawnPoint.x + 17, this.respawnPoint.y + 17);
+                    return;
+                }
+                super.draw(ctx);
+                
+                const hasShield = (this.active && this.shieldTimer > 0) || godMode || immortalMode;
+                if (hasShield) {
+                    if (Math.floor(Date.now() / 50) % 2 === 0) {
+                        ctx.save();
+                        if (godMode) ctx.strokeStyle = '#00ffff'; 
+                        else if (immortalMode) ctx.strokeStyle = '#ffffff'; 
+                        else ctx.strokeStyle = '#ffff00'; 
+                        
+                        ctx.lineWidth = 2; ctx.beginPath();
+                        ctx.arc(this.x + this.w/2, this.y + this.h/2, this.w/1.2, 0, Math.PI*2);
+                        ctx.stroke(); ctx.restore();
+                    }
+                }
+            }
+        }
+
+        class Enemy extends Tank {
+            constructor(x, y, type) {
+                let color = '#cccccc'; 
+                if (type === ENEMY_TYPE.FAST) color = '#ff5555'; 
+                if (type === ENEMY_TYPE.ARMORED) color = '#00aa00'; 
+                super(x, y, color);
+                this.type = type;
+                this.moveTimer = 0;
+                this.currentDir = DIR.DOWN;
+                if (type === ENEMY_TYPE.BASIC) { this.speed = 1.8; this.hp = 1; this.value = 50; } 
+                else if (type === ENEMY_TYPE.FAST) { this.speed = 3.5; this.hp = 1; this.value = 100; } 
+                else if (type === ENEMY_TYPE.ARMORED) { this.speed = 1.2; this.hp = 3; this.value = 200; }
+            }
+            hit() {
+                this.hp--;
+                if (this.type === ENEMY_TYPE.ARMORED) {
+                    if (this.hp === 2) this.color = '#55aa55'; 
+                    if (this.hp === 1) this.color = '#aaffaa'; 
+                }
+                return this.hp <= 0;
+            }
+            updateAI(map, obstacles, isFrozen) {
+                if (isFrozen) return null; // Mod: đóng băng địch
+
+                this.update();
+                if (this.moveTimer <= 0) {
+                    this.moveTimer = 30 + Math.random() * 40;
+                    if (Math.random() < 0.2) this.currentDir = Math.floor(Math.random() * 4);
+                    else if (Math.random() < 0.6) this.currentDir = DIR.DOWN;
+                    else this.currentDir = Math.floor(Math.random() * 4);
+                }
+                this.moveTimer--;
+                const oldX = this.x; const oldY = this.y;
+                this.move(this.currentDir, map, obstacles);
+                if (Math.abs(this.x - oldX) < 0.1 && Math.abs(this.y - oldY) < 0.1) {
+                    this.currentDir = Math.floor(Math.random() * 4); this.moveTimer = 20;
+                }
+                let fireChance = 0.015;
+                if (this.type === ENEMY_TYPE.FAST) fireChance = 0.025; 
+                if (Math.random() < fireChance) return this.shoot('enemy', 40, 6); 
+                return null;
+            }
+        }
+
+        class Map {
+            constructor() { this.grid = []; this.baseActive = true; }
+            isWalkable(r, c) {
+                if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
+                const t = this.grid[r][c]; return t === TILE.EMPTY || t === TILE.GRASS;
+            }
+            clearArea(r, c, h, w) {
+                for(let i=r; i<r+h; i++) for(let j=c; j<c+w; j++) {
+                    if(i>=0 && i<ROWS && j>=0 && j<COLS) {
+                        if(i >= 11 && j >= 5 && j <= 7) continue; 
+                        this.grid[i][j] = TILE.EMPTY;
+                    }
+                }
+            }
+            drawRect(r, c, h, w, type) {
+                for(let i=r; i<r+h; i++) for(let j=c; j<c+w; j++) {
+                    if(i>=0 && i<ROWS && j>=0 && j<COLS) {
+                        if(i >= 11 && j >= 5 && j <= 7) continue;
+                        this.grid[i][j] = type;
+                    }
+                }
+            }
+            generate(level) {
+                this.baseActive = true;
+                this.grid = Array(ROWS).fill().map(() => Array(COLS).fill(TILE.EMPTY));
+                this.setBaseProtection(false); 
+                const density = 20 + level * 2; 
+                for (let i = 0; i < density; i++) {
+                    const r = Math.floor(Math.random() * ROWS);
+                    const c = Math.floor(Math.random() * (COLS / 2)); 
+                    const isVertical = Math.random() > 0.5;
+                    const len = 2 + Math.floor(Math.random() * 4); 
+                    if (isVertical) {
+                        this.drawRect(r, c, len, 1, TILE.BRICK);
+                        this.drawRect(r, COLS - 1 - c, len, 1, TILE.BRICK);
+                    } else {
+                        this.drawRect(r, c, 1, len, TILE.BRICK);
+                        this.drawRect(r, COLS - 1 - c - (len-1), 1, len, TILE.BRICK);
+                    }
+                }
+                const steelCount = 2 + Math.floor(level / 2);
+                for (let i = 0; i < steelCount; i++) {
+                    const r = Math.floor(Math.random() * (ROWS - 2));
+                    const c = Math.floor(Math.random() * (COLS / 2));
+                    this.drawRect(r, c, 1, 2, TILE.STEEL); 
+                    this.drawRect(r, COLS - 1 - c - 1, 1, 2, TILE.STEEL); 
+                }
+                const grassCount = 3 + Math.floor(level / 2);
+                for (let i = 0; i < grassCount; i++) {
+                    const r = Math.floor(Math.random() * (ROWS - 2));
+                    const c = Math.floor(Math.random() * (COLS / 2));
+                    this.drawRect(r, c, 3, 3, TILE.GRASS); 
+                    this.drawRect(r, COLS - 1 - c - 2, 3, 3, TILE.GRASS); 
+                }
+                this.clearArea(0, 0, 2, 2); this.clearArea(0, 6, 1, 2); this.clearArea(0, 11, 2, 2);
+                this.clearArea(12, 4, 1, 1); this.clearArea(12, 8, 1, 1); this.clearArea(11, 4, 2, 5);
+            }
+            setBaseProtection(isSteel) {
+                const type = isSteel ? TILE.STEEL : TILE.BRICK;
+                this.grid[11][5] = type; this.grid[11][6] = type; this.grid[11][7] = type;
+                this.grid[12][5] = type; this.grid[12][6] = TILE.BASE;  this.grid[12][7] = type;
+            }
+            destroyBase() { this.baseActive = false; }
+            drawBottom(ctx) {
+                for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+                    const tile = this.grid[r][c]; const x = c * TILE_SIZE; const y = r * TILE_SIZE;
+                    if (tile === TILE.BRICK) {
+                        ctx.fillStyle = '#a52a2a'; ctx.fillRect(x+2, y+2, TILE_SIZE-4, TILE_SIZE-4);
+                        ctx.fillStyle = '#000'; ctx.fillRect(x+2, y+18, TILE_SIZE-4, 4); ctx.fillRect(x+18, y+2, 4, 36);
+                    } else if (tile === TILE.STEEL) {
+                        ctx.fillStyle = '#ddd'; ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        ctx.strokeStyle = '#fff'; ctx.strokeRect(x+4, y+4, TILE_SIZE-8, TILE_SIZE-8);
+                    } else if (tile === TILE.BASE) {
+                        if (this.baseActive) {
+                            ctx.fillStyle = '#4444ff'; ctx.beginPath();
+                            ctx.moveTo(x + 20, y + 5); ctx.lineTo(x + 35, y + 35); ctx.lineTo(x + 5, y + 35); ctx.fill();
+                            ctx.fillStyle = '#fff'; ctx.fillRect(x+18, y+12, 4, 4);
+                        } else {
+                            ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(x+20, y+20, 15, 0, Math.PI*2); ctx.fill();
+                            ctx.strokeStyle = 'red'; ctx.lineWidth = 3; ctx.stroke();
+                        }
+                    }
+                }
+            }
+            drawTop(ctx) {
+                for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+                    if (this.grid[r][c] === TILE.GRASS) {
+                        const x = c * TILE_SIZE; const y = r * TILE_SIZE;
+                        ctx.fillStyle = 'rgba(0, 150, 0, 0.8)'; ctx.fillRect(x+2, y+2, TILE_SIZE-4, TILE_SIZE-4);
+                        ctx.fillStyle = '#00ff00'; ctx.fillRect(x+5, y+5, 4, 4); ctx.fillRect(x+25, y+25, 3, 3);
+                    }
+                }
+            }
+        }
+
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.input = new InputHandler();
+                this.map = new Map();
+                this.items = []; 
+                this.baseProtectionTimer = 0;
+                
+                this.gold = 0;
+                this.upgrades = { speed: 0, bulletSpeed: 0, fireRate: 0 };
+                this.shopSelection = 0; 
+
+                // HỆ THỐNG MOD/HACK
+                this.mods = {
+                    infiniteGold: false,
+                    baseInvincible: false,
+                    frozenEnemies: false
+                };
+                
+                this.modList = [
+                    { name: "VÀNG VÔ HẠN", type: 'toggle', prop: 'infiniteGold' },
+                    { name: "CĂN CỨ BẤT TỬ", type: 'toggle', prop: 'baseInvincible' },
+                    { name: "ĐÓNG BĂNG ĐỊCH", type: 'toggle', prop: 'frozenEnemies' },
+                    { name: "MAX CHỈ SỐ NGAY", type: 'action', action: () => this.modMaxStats() },
+                    { name: "HỦY DIỆT TẤT CẢ", type: 'action', action: () => this.modKillAll() },
+                    { name: "XÓA ĐỊA HÌNH", type: 'action', action: () => this.modBulldozer() },
+                    { name: "QUA MÀN NGAY", type: 'action', action: () => this.startLevel(this.level + 1) },
+                    { name: "THOÁT MENU", type: 'action', action: () => this.state = STATE.PLAYING }
+                ];
+                this.modSelection = 0;
+
+                this.loop = this.loop.bind(this);
+                this.initGame();
+                requestAnimationFrame(this.loop);
+            }
+
+            initGame() {
+                this.level = 1; this.state = STATE.PLAYING;
+                this.gold = 0;
+                this.upgrades = { speed: 0, bulletSpeed: 0, fireRate: 0 };
+                
+                this.godMode = false; 
+                this.immortalMode = false; 
+                this.pKeyPressed = false;
+                this.oKeyPressed = false;
+                
+                this.p1Controls = { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', fire: 'Space' };
+                this.p2Controls = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', fire: 'Enter' };
+                
+                this.startLevel(this.level);
+            }
+
+            startLevel(level) {
+                this.level = level;
+                this.state = STATE.PLAYING;
+                this.map.generate(level);
+                this.baseProtectionTimer = 0;
+                this.items = []; 
+
+                if (this.godMode || this.immortalMode || this.mods.baseInvincible) this.map.setBaseProtection(true);
+                this.enemies = []; this.bullets = [];
+                
+                this.totalEnemiesToSpawn = 10 + (level - 1);
+                const specialCount = Math.min(this.totalEnemiesToSpawn, level - 1);
+                this.spawnQueue = [];
+                for (let i = 0; i < this.totalEnemiesToSpawn; i++) this.spawnQueue.push(ENEMY_TYPE.BASIC);
+                for (let i = 0; i < specialCount; i++) {
+                    const type = Math.random() > 0.5 ? ENEMY_TYPE.FAST : ENEMY_TYPE.ARMORED;
+                    const index = Math.floor(Math.random() * this.spawnQueue.length);
+                    this.spawnQueue[index] = type;
+                }
+                this.spawnQueue.sort(() => Math.random() - 0.5);
+                this.enemiesSpawnedCount = 0; this.maxEnemiesOnScreen = 4; this.spawnTimer = 0;
+                
+                this.p1 = new Player(4 * TILE_SIZE + 3, 12 * TILE_SIZE + 3, '#ffaa00', this.p1Controls, this.upgrades);
+                this.p2 = new Player(8 * TILE_SIZE + 3, 12 * TILE_SIZE + 3, '#00ff00', this.p2Controls, this.upgrades);
+                
+                this.updateUI();
+            }
+
+            // --- MOD FUNCTIONS ---
+            modMaxStats() {
+                this.upgrades.speed = 10;
+                this.upgrades.bulletSpeed = 10;
+                this.upgrades.fireRate = 10;
+                this.updateUI();
+            }
+            modKillAll() {
+                this.enemies.forEach(e => e.active = false);
+                this.spawnQueue = [];
+                // Update UI will be called in update loop
+            }
+            modBulldozer() {
+                for(let r=0; r<ROWS; r++) {
+                    for(let c=0; c<COLS; c++) {
+                        if (this.map.grid[r][c] === TILE.BRICK || this.map.grid[r][c] === TILE.STEEL) {
+                            // Không xóa tường base
+                            if (!(r>=11 && c>=5 && c<=7)) this.map.grid[r][c] = TILE.EMPTY;
+                        }
+                    }
+                }
+            }
+
+            spawnItem(x, y, forcedType) {
+                let type = forcedType;
+                if (type === null) {
+                    const rand = Math.random();
+                    if (rand < 0.25) type = ITEM_TYPE.SHIELD;
+                    else if (rand < 0.5) type = ITEM_TYPE.STAR;
+                    else if (rand < 0.75) type = ITEM_TYPE.BOOTS;
+                    else type = ITEM_TYPE.SHOVEL;
+                }
+                this.items.push(new Item(x, y, type));
+            }
+
+            spawnEnemy() {
+                if (this.spawnQueue.length === 0) return;
+                const spawns = [0, 6, 12];
+                const col = spawns[Math.floor(Math.random() * spawns.length)];
+                const type = this.spawnQueue[0];
+                const enemy = new Enemy(col * TILE_SIZE + 3, 3, type);
+                let clear = true;
+                const r = enemy.getRect();
+                if (this.p1.active && rectIntersect(r, this.p1.getRect())) clear = false;
+                if (this.p2.active && rectIntersect(r, this.p2.getRect())) clear = false;
+                this.enemies.forEach(e => { if (rectIntersect(r, e.getRect())) clear = false; });
+                if (clear) {
+                    this.enemies.push(enemy); this.spawnQueue.shift(); 
+                    this.enemiesSpawnedCount++; this.updateUI();
+                }
+            }
+
+            updateShop() {
+                let up = this.input.isPressed('ArrowUp') || this.input.isPressed('KeyW');
+                let down = this.input.isPressed('ArrowDown') || this.input.isPressed('KeyS');
+                let select = this.input.isPressed('Enter') || this.input.isPressed('Space');
+
+                if (up) {
+                    this.shopSelection--;
+                    if (this.shopSelection < 0) this.shopSelection = 3;
+                }
+                if (down) {
+                    this.shopSelection++;
+                    if (this.shopSelection > 3) this.shopSelection = 0;
+                }
+                
+                if (select) {
+                    if (this.shopSelection === 3) {
+                        this.startLevel(this.level + 1);
+                        return;
+                    }
+                    let currentTier = 0;
+                    if (this.shopSelection === 0) currentTier = this.upgrades.speed;
+                    else if (this.shopSelection === 1) currentTier = this.upgrades.bulletSpeed;
+                    else if (this.shopSelection === 2) currentTier = this.upgrades.fireRate;
+
+                    const price = 500 * (currentTier + 1);
+
+                    if (this.gold >= price) { 
+                        this.gold -= price;
+                        if (this.shopSelection === 0) this.upgrades.speed++;
+                        else if (this.shopSelection === 1) this.upgrades.bulletSpeed++;
+                        else if (this.shopSelection === 2) this.upgrades.fireRate++;
+                        this.updateUI();
+                    }
+                }
+            }
+
+            updateModMenu() {
+                // Thoát menu bằng phím M hoặc Escape
+                if (this.input.isPressed('KeyM') || this.input.isPressed('Escape')) {
+                    this.state = STATE.PLAYING;
+                    return;
+                }
+
+                let up = this.input.isPressed('ArrowUp') || this.input.isPressed('KeyW');
+                let down = this.input.isPressed('ArrowDown') || this.input.isPressed('KeyS');
+                let select = this.input.isPressed('Enter') || this.input.isPressed('Space');
+
+                if (up) {
+                    this.modSelection--;
+                    if (this.modSelection < 0) this.modSelection = this.modList.length - 1;
+                }
+                if (down) {
+                    this.modSelection++;
+                    if (this.modSelection >= this.modList.length) this.modSelection = 0;
+                }
+
+                if (select) {
+                    const mod = this.modList[this.modSelection];
+                    if (mod.type === 'toggle') {
+                        this.mods[mod.prop] = !this.mods[mod.prop];
+                        // Logic đặc biệt cho base
+                        if (mod.prop === 'baseInvincible') {
+                            if (this.mods.baseInvincible) this.map.setBaseProtection(true);
+                        }
+                    } else if (mod.type === 'action') {
+                        mod.action();
+                    }
+                }
+            }
+
+            updateGame() {
+                // MOD: Infinite Gold Check
+                if (this.mods.infiniteGold && this.gold < 999999) {
+                    this.gold = 999999;
+                    this.updateUI();
+                }
+
+                if (this.input.isPressed('KeyM')) {
+                    this.state = STATE.MOD_MENU;
+                    return;
+                }
+
+                // TOGGLE MODE LOGIC (MUTUALLY EXCLUSIVE)
+                if (this.input.isDown('KeyP')) {
+                    if (!this.pKeyPressed) { 
+                        this.godMode = !this.godMode; 
+                        if (this.godMode) this.immortalMode = false; // Tắt O nếu bật P
+                        if (this.baseProtectionTimer <= 0) this.map.setBaseProtection(this.godMode || this.immortalMode || this.mods.baseInvincible);
+                        this.pKeyPressed = true; 
+                        this.updateUI();
+                    }
+                } else { this.pKeyPressed = false; }
+
+                if (this.input.isDown('KeyO')) {
+                    if (!this.oKeyPressed) { 
+                        this.immortalMode = !this.immortalMode; 
+                        if (this.immortalMode) this.godMode = false; // Tắt P nếu bật O
+                        if (this.baseProtectionTimer <= 0) this.map.setBaseProtection(this.godMode || this.immortalMode || this.mods.baseInvincible);
+                        this.oKeyPressed = true; 
+                        this.updateUI();
+                    }
+                } else { this.oKeyPressed = false; }
+
+                if (this.state === STATE.GAMEOVER) {
+                    if (this.input.isDown('KeyR')) this.initGame();
+                    return;
+                }
+
+                if (this.spawnQueue.length === 0 && this.enemies.length === 0) {
+                    setTimeout(() => {
+                        this.state = STATE.SHOP;
+                        this.shopSelection = 0;
+                    }, 1000);
+                    return;
+                }
+
+                if (this.baseProtectionTimer > 0) {
+                    this.baseProtectionTimer--;
+                    if (this.baseProtectionTimer === 0 && !this.godMode && !this.immortalMode && !this.mods.baseInvincible) this.map.setBaseProtection(false);
+                }
+
+                [this.p1, this.p2].forEach(p => {
+                    p.update();
+                    const otherP = (p === this.p1) ? this.p2 : this.p1;
+                    const b = p.handleInput(this.input, this.map, this.enemies, otherP, this.godMode);
+                    if (b) this.bullets.push(b);
+                });
+
+                if (this.enemies.length < this.maxEnemiesOnScreen) {
+                    this.spawnTimer++;
+                    if (this.spawnTimer > 60) { this.spawnEnemy(); this.spawnTimer = 0; }
+                }
+                
+                this.enemies.forEach(e => {
+                    if (e.active) {
+                        const obstacles = [...this.enemies.filter(x => x!==e)];
+                        if(this.p1.active) obstacles.push(this.p1);
+                        if(this.p2.active) obstacles.push(this.p2);
+                        // Truyền mod frozenEnemies vào
+                        const b = e.updateAI(this.map, obstacles, this.mods.frozenEnemies);
+                        if (b) this.bullets.push(b);
+                    }
+                });
+
+                this.bullets.forEach(b => b.update(this.map, this.godMode, this.immortalMode, this));
+                this.checkCollisions();
+                this.checkItemCollisions();
+
+                const prevEnemyCount = this.enemies.length;
+                this.bullets = this.bullets.filter(b => b.active);
+                this.enemies = this.enemies.filter(e => e.active);
+                this.items = this.items.filter(i => i.active);
+
+                if (this.enemies.length < prevEnemyCount) this.updateUI();
+
+                if (!this.map.baseActive) this.state = STATE.GAMEOVER;
+            }
+
+            update() {
+                if (this.state === STATE.SHOP) this.updateShop();
+                else if (this.state === STATE.MOD_MENU) this.updateModMenu();
+                else this.updateGame();
+            }
+
+            checkCollisions() {
+                this.bullets.forEach(b => {
+                    if (!b.active) return;
+                    const bRect = b.getRect();
+                    if (b.ownerType === 'player') {
+                        this.enemies.forEach(e => {
+                            if (e.active && rectIntersect(bRect, e.getRect())) {
+                                b.active = false;
+                                const isDead = e.hit();
+                                if (isDead) {
+                                    e.active = false;
+                                    this.gold += e.value; 
+                                    this.updateUI();
+                                }
+                            }
+                        });
+                    } else {
+                        [this.p1, this.p2].forEach(p => {
+                            if (p.active && rectIntersect(bRect, p.getRect())) {
+                                b.active = false; 
+                                if (this.godMode || this.immortalMode) return;
+                                if (p.shieldTimer <= 0) p.die(); 
+                            }
+                        });
+                    }
+                });
+            }
+
+            checkItemCollisions() {
+                this.items.forEach(item => {
+                    if (!item.active) return;
+                    const iRect = item.getRect();
+                    [this.p1, this.p2].forEach(p => {
+                        if (p.active && rectIntersect(iRect, p.getRect())) {
+                            item.active = false;
+                            if (item.type === ITEM_TYPE.SHOVEL) {
+                                this.map.setBaseProtection(true);
+                                this.baseProtectionTimer = 30 * 60;
+                            } else if (item.type === ITEM_TYPE.COIN) {
+                                this.gold += 50; 
+                                this.updateUI();
+                            } else {
+                                p.applyItem(item.type);
+                            }
+                        }
+                    });
+                });
+            }
+
+            updateUI() {
+                document.getElementById('gold-count').innerText = this.gold;
+                document.getElementById('level-display').innerText = this.level;
+                
+                let cBasic = 0, cFast = 0, cArmored = 0;
+                this.spawnQueue.forEach(t => {
+                    if (t === ENEMY_TYPE.BASIC) cBasic++;
+                    if (t === ENEMY_TYPE.FAST) cFast++;
+                    if (t === ENEMY_TYPE.ARMORED) cArmored++;
+                });
+                this.enemies.forEach(e => {
+                    if (e.active) {
+                        if (e.type === ENEMY_TYPE.BASIC) cBasic++;
+                        if (e.type === ENEMY_TYPE.FAST) cFast++;
+                        if (e.type === ENEMY_TYPE.ARMORED) cArmored++;
+                    }
+                });
+                document.getElementById('count-basic').innerText = cBasic;
+                document.getElementById('count-fast').innerText = cFast;
+                document.getElementById('count-armored').innerText = cArmored;
+
+                let spd = (2.0 + (this.upgrades.speed * 0.2)).toFixed(1);
+                let bSpd = 6 + this.upgrades.bulletSpeed;
+                let fire = Math.max(5, 25 - (this.upgrades.fireRate * 2));
+
+                document.getElementById('stat-speed').innerText = spd;
+                document.getElementById('stat-bullet').innerText = bSpd;
+                document.getElementById('stat-fire').innerText = fire + " (tick)";
+
+                const godStatus = document.getElementById('god-mode-status');
+                godStatus.className = "";
+                if (this.godMode) {
+                    godStatus.innerText = "★ CHẾ ĐỘ SIÊU CẤP (P) ★";
+                    godStatus.className = "god-mode-active";
+                } else if (this.immortalMode) {
+                    godStatus.innerText = "★ CHẾ ĐỘ BẤT TỬ (O) ★";
+                    godStatus.className = "immortal-mode-active";
+                } else {
+                    godStatus.innerText = "";
+                }
+            }
+
+            drawShop() {
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+                
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '30px Courier New';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText("CỬA HÀNG - HOÀN THÀNH CẤP " + this.level, SCREEN_WIDTH/2, 100);
+                
+                this.ctx.font = '20px Courier New';
+                this.ctx.fillText("VÀNG: " + this.gold + " $", SCREEN_WIDTH/2, 140);
+                
+                const opts = [
+                    { name: "TỐC ĐỘ XE", val: this.upgrades.speed, price: 500 * (this.upgrades.speed + 1) },
+                    { name: "TỐC ĐỘ ĐẠN", val: this.upgrades.bulletSpeed, price: 500 * (this.upgrades.bulletSpeed + 1) },
+                    { name: "TỐC ĐỘ BẮN", val: this.upgrades.fireRate, price: 500 * (this.upgrades.fireRate + 1) },
+                    { name: "QUA MÀN >>", val: "", price: 0 }
+                ];
+
+                for(let i=0; i<opts.length; i++) {
+                    const y = 220 + i * 50;
+                    if (i === this.shopSelection) {
+                        this.ctx.fillStyle = '#ffff00';
+                        this.ctx.fillText("> " + opts[i].name, SCREEN_WIDTH/2 - 100, y);
+                    } else {
+                        this.ctx.fillStyle = '#aaa';
+                        this.ctx.fillText(opts[i].name, SCREEN_WIDTH/2 - 100, y);
+                    }
+                    
+                    if (i < 3) {
+                        this.ctx.fillStyle = '#00ff00';
+                        for(let k=0; k<opts[i].val; k++) this.ctx.fillRect(SCREEN_WIDTH/2 + 50 + k*15, y-15, 10, 20);
+                        
+                        this.ctx.fillStyle = (this.gold >= opts[i].price) ? '#fff' : '#555';
+                        this.ctx.font = '16px Courier New';
+                        this.ctx.fillText(opts[i].price + "$", SCREEN_WIDTH/2 + 200, y);
+                        this.ctx.font = '20px Courier New';
+                    }
+                }
+            }
+
+            drawModMenu() {
+                // Vẽ overlay mờ
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                this.ctx.fillRect(50, 50, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100);
+                this.ctx.strokeStyle = '#ff00ff';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(50, 50, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100);
+
+                this.ctx.fillStyle = '#ff00ff';
+                this.ctx.font = '30px Courier New';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText("BẢNG MOD / HACK", SCREEN_WIDTH/2, 100);
+
+                this.ctx.font = '18px Courier New';
+                
+                for(let i=0; i<this.modList.length; i++) {
+                    const mod = this.modList[i];
+                    const y = 160 + i * 35;
+                    let text = mod.name;
+
+                    if (mod.type === 'toggle') {
+                        const status = this.mods[mod.prop] ? "[BẬT]" : "[TẮT]";
+                        text += " " + status;
+                    }
+
+                    if (i === this.modSelection) {
+                        this.ctx.fillStyle = '#ffff00';
+                        this.ctx.fillText("> " + text + " <", SCREEN_WIDTH/2, y);
+                    } else {
+                        // Nếu đang bật thì màu tím, tắt màu xám
+                        if (mod.type === 'toggle' && this.mods[mod.prop]) this.ctx.fillStyle = '#ff00ff';
+                        else this.ctx.fillStyle = '#aaa';
+                        this.ctx.fillText(text, SCREEN_WIDTH/2, y);
+                    }
+                }
+            }
+
+            draw() {
+                if (this.state === STATE.SHOP) {
+                    this.drawShop();
+                    return;
+                }
+
+                // Vẽ game trước
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+                this.map.drawBottom(this.ctx);
+                this.items.forEach(item => item.draw(this.ctx));
+                if (this.p1.active || this.p1.respawnTimer > 0) this.p1.draw(this.ctx, this.godMode, this.immortalMode);
+                if (this.p2.active || this.p2.respawnTimer > 0) this.p2.draw(this.ctx, this.godMode, this.immortalMode);
+                this.enemies.forEach(e => e.draw(this.ctx));
+                this.map.drawTop(this.ctx);
+                this.bullets.forEach(b => b.draw(this.ctx));
+
+                if (this.state === STATE.MOD_MENU) {
+                    this.drawModMenu();
+                    return;
+                }
+
+                if (this.state === STATE.GAMEOVER) {
+                    this.ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                    this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+                    this.ctx.fillStyle = '#ff0000';
+                    this.ctx.font = 'bold 40px Courier New';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText("CĂN CỨ BỊ PHÁ HỦY!", SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.font = '20px Courier New';
+                    this.ctx.fillText("Nhấn 'R' để Chơi lại", SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 60);
+                }
+            }
+
+            loop() {
+                this.update();
+                this.draw();
+                requestAnimationFrame(this.loop);
+            }
+        }
+
+        window.onload = () => new Game();
+    </script>
+</body>
+</html>
